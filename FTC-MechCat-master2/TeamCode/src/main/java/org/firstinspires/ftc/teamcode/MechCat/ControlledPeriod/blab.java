@@ -30,9 +30,11 @@ public class blab extends OpMode
 
     //region PIDS
     public static PIDController vController;
-    public static double Pv = 0.029, Iv = 0, Dv = 0.0013, Fv = 0.03; // Pv = 0.003, Iv = 0, Dv = 0, Fv = 0.3
+    public static double Pv = 0.003, Iv = 0, Dv = 0, Fv = 0.3; // Pv = 0.003, Iv = 0, Dv = 0, Fv = 0.3
     // Pv = 0.029, Iv = 0, Dv = 0.0013, Fv = 0.03
     public static int vTarget = 0;
+
+
 
     // PID tuning: static the above 3 variables, upload code, then tune
 

@@ -53,6 +53,17 @@ import java.util.List;
  * Remove or comment out the @Disabled line to add this OpMode to the Driver Station OpMode list.
  */
 
+// field 142 x 142 inches (6 tiles x 6 tiles)
+// tile 24 x 24 inches
+// 3rd tile from pixel drop area are bars
+// 8 inches from wall (backboard)
+// 12 inches from backboard to blue tape
+// 0.5 inch for half of metal bar
+
+// 8 inches to center from back
+// 7 inches to center from front
+// 6.5 inches to center from sides
+
 @com.qualcomm.robotcore.eventloop.opmode.Autonomous(name = "Autonomous")
 public class Autonomous extends LinearOpMode {
 
@@ -60,10 +71,10 @@ public class Autonomous extends LinearOpMode {
 
     // TFOD_MODEL_ASSET points to a model file stored in the project Asset location,
     // this is only used for Android Studio when using models in Assets.
-    private static final String TFOD_MODEL_ASSET = "MyModelStoredAsAsset.tflite";
+    //private static final String TFOD_MODEL_ASSET = "MyModelStoredAsAsset.tflite";
     // TFOD_MODEL_FILE points to a model file stored onboard the Robot Controller's storage,
     // this is used when uploading models directly to the RC using the model upload interface.
-    private static final String TFOD_MODEL_FILE = "/sdcard/FIRST/tflitemodels/myCustomModel.tflite";
+    //private static final String TFOD_MODEL_FILE = "/sdcard/FIRST/tflitemodels/myCustomModel.tflite";
     // Define the labels recognized in the model for TFOD (must be in training order!)
     private static final String[] LABELS = {
             "Pixel",
@@ -79,10 +90,11 @@ public class Autonomous extends LinearOpMode {
      */
     private VisionPortal visionPortal;
 
+    // sample mecanum drive for the trajectory
+    SampleMecanumDrive drive = new SampleMecanumDrive(hardwareMap);
+
     @Override
     public void runOpMode() {
-        SampleMecanumDrive drive = new SampleMecanumDrive(hardwareMap);
-
         initTfod();
 
         // Wait for the DS start button to be touched.
@@ -90,6 +102,11 @@ public class Autonomous extends LinearOpMode {
         telemetry.addData(">", "Touch Play to start OpMode");
         telemetry.update();
         waitForStart();
+
+        // run redside roadrunner
+        RRRoadRunner(drive);
+
+        if (isStopRequested()) return;
 
         if (opModeIsActive()) {
             while (opModeIsActive()) {
@@ -116,12 +133,31 @@ public class Autonomous extends LinearOpMode {
 
     }   // end runOpMode()
 
-    private void RRoadRunner(SampleMecanumDrive drive){
-        Trajectory traj = drive.trajectoryBuilder(new Pose2d())
-                .splineTo(new Vector2d(30, 30), 0)
+    private void RRRoadRunner(SampleMecanumDrive drive){
+        // ROADRUNNER RED SIDE
+        // assuming our starting point as (0,0) so trajectories will be relative to where we start
+        // increasing heading goes counterclockwise
+
+        Pose2d startPos = new Pose2d(12, -60, Math.toRadians(90));
+
+        // forward to tape areas
+        Trajectory traj = drive.trajectoryBuilder(startPos)
+                .forward(24)
+                .back(24)
+                .strafeRight(12)
+                .splineToLinearHeading(new Pose2d(38, -36, Math.toRadians(180)), Math.toRadians(90))
+                .back(10)
+                .forward(8)
+                .splineToLinearHeading(new Pose2d(58, -60, Math.toRadians(180)), Math.toRadians(0))
                 .build();
 
+        // scan for pixel or prop somehow with tensorflow
+        // TODO: Add tensorflow stuff here
+
+
         drive.followTrajectory(traj);
+        // TODO: Add tensorflow here
+
     }
 
     /**

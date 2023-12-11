@@ -3,6 +3,8 @@ package org.firstinspires.ftc.teamcode.MechCat.ControlledPeriod;
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.config.Config;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
+import com.acmerobotics.roadrunner.geometry.Pose2d;
+import com.acmerobotics.roadrunner.geometry.Vector2d;
 import com.acmerobotics.roadrunner.trajectory.Trajectory;
 import com.arcrobotics.ftclib.controller.PIDController;
 import com.qualcomm.hardware.lynx.LynxModule;
@@ -13,6 +15,9 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.Servo;
+
+import org.firstinspires.ftc.teamcode.drive.PoseStorage;
+import org.firstinspires.ftc.teamcode.drive.SampleMecanumDrive;
 
 
 @TeleOp(name = "Controller")
@@ -37,6 +42,9 @@ public class Controller extends OpMode {
     // Pv = 0.029, Iv = 0, Dv = 0.0013, Fv = 0.03 // static when tuning
     // Dv = 0.0005, Fv = 0.03, Iv = 0.001, Pv = 0.029
     public int vTarget = 0; // static when tuning
+
+    // for driver centered
+
 
     @Override
     public void init() {
@@ -86,6 +94,8 @@ public class Controller extends OpMode {
     }
 
     public void move(boolean crawl) {
+        //SampleMecanumDrive drive = new SampleMecanumDrive(hardwareMap);
+        //drive.setPoseEstimate(PoseStorage.currentPose);
         //double INVERT_RIGHT_MOTORS = -1;
         double mltp = 0.8;
         if (crawl)
@@ -113,6 +123,26 @@ public class Controller extends OpMode {
         telemetry.addData("LF Target Power", LFMotorPower);
         telemetry.addData("RB Target Power", RBMotorPower);
         telemetry.addData("LB Target Power", LBMotorPower);
+//
+//        // Read pose
+//        Pose2d poseEstimate = drive.getPoseEstimate();
+//
+//// Create a vector from the gamepad x/y inputs
+//// Then, rotate that vector by the inverse of that heading
+//        Vector2d input = new Vector2d(
+//                -gamepad1.left_stick_y * mltp,
+//                -gamepad1.left_stick_x * mltp
+//        ).rotated(-poseEstimate.getHeading());
+//
+//// Pass in the rotated input + right stick value for rotation
+//// Rotation is not part of the rotated input thus must be passed in separately
+//        drive.setWeightedDrivePower(
+//                new Pose2d(
+//                        input.getX(),
+//                        input.getY(),
+//                        -gamepad1.right_stick_x
+//                )
+//        );
     }
 
     public void shootPlane(boolean power) {
