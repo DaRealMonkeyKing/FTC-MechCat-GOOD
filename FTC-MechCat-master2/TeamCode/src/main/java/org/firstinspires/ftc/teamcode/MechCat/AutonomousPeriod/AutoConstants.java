@@ -16,7 +16,7 @@ public class AutoConstants {
  * claw2        control hub         4
  * LArmMotor    expansion hub:      3
  * RArmMotor    expansion hub:      2
- * clawServo    expansion hub       0
+ * clawServo    control hub         5
  * RFMotor      control hub         0
  * LFMotor      control hub         1
  * LBMotor      control hub         2

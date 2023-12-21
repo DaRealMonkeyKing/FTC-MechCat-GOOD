@@ -29,19 +29,33 @@
 
 package org.firstinspires.ftc.teamcode.MechCat.AutonomousPeriod;
 
-import com.qualcomm.robotcore.eventloop.opmode.Disabled;
-import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
-import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
-import org.firstinspires.ftc.robotcore.external.hardware.camera.BuiltinCameraDirection;
-import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
-import org.firstinspires.ftc.robotcore.external.tfod.Recognition;
-import org.firstinspires.ftc.vision.VisionPortal;
-import org.firstinspires.ftc.vision.tfod.TfodProcessor;
-
+import com.acmerobotics.dashboard.FtcDashboard;
+import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import com.acmerobotics.roadrunner.geometry.Pose2d;
 import com.acmerobotics.roadrunner.geometry.Vector2d;
 import com.acmerobotics.roadrunner.trajectory.Trajectory;
+import com.arcrobotics.ftclib.controller.PIDController;
+import com.qualcomm.hardware.lynx.LynxModule;
+import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorEx;
+import com.qualcomm.robotcore.hardware.Servo;
+
+import org.firstinspires.ftc.robotcore.external.hardware.camera.BuiltinCameraDirection;
+import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
+import org.firstinspires.ftc.robotcore.external.tfod.Recognition;
+import org.firstinspires.ftc.teamcode.drive.DriveConstants;
 import org.firstinspires.ftc.teamcode.drive.SampleMecanumDrive;
+import org.firstinspires.ftc.vision.VisionPortal;
+import org.firstinspires.ftc.vision.tfod.TfodProcessor;
+import org.firstinspires.ftc.teamcode.drive.PoseStorage;
+
+import static org.firstinspires.ftc.teamcode.MechCat.AutonomousPeriod.AutoConstants.Claw1ClosePos;
+import static org.firstinspires.ftc.teamcode.MechCat.AutonomousPeriod.AutoConstants.Claw2ClosePos;
+import static org.firstinspires.ftc.teamcode.MechCat.AutonomousPeriod.AutoConstants.Claw1OpenPos;
+import static org.firstinspires.ftc.teamcode.MechCat.AutonomousPeriod.AutoConstants.Claw2OpenPos;
+import static org.firstinspires.ftc.teamcode.MechCat.AutonomousPeriod.AutoConstants.ClawServoBoard;
+import static org.firstinspires.ftc.teamcode.MechCat.AutonomousPeriod.AutoConstants.ClawServoGround;
 
 import java.util.List;
 
@@ -64,123 +78,265 @@ import java.util.List;
 // 7 inches to center from front
 // 6.5 inches to center from sides
 
-@com.qualcomm.robotcore.eventloop.opmode.Autonomous(name = "Autonomous")
+// claw able to release independently
+// change dpad up to extend slider
+// dpad down to retract slider
+// dpad left and right to release corresponding claw
+
 public class Autonomous extends LinearOpMode {
 
-    private static final boolean USE_WEBCAM = true;  // true for webcam, false for phone camera
+    protected static final boolean USE_WEBCAM = true;  // true for webcam, false for phone camera
 
     // TFOD_MODEL_ASSET points to a model file stored in the project Asset location,
     // this is only used for Android Studio when using models in Assets.
-    //private static final String TFOD_MODEL_ASSET = "MyModelStoredAsAsset.tflite";
+    protected static final String TFOD_MODEL_ASSET = "OurCoolModel.tflite";
     // TFOD_MODEL_FILE points to a model file stored onboard the Robot Controller's storage,
     // this is used when uploading models directly to the RC using the model upload interface.
     //private static final String TFOD_MODEL_FILE = "/sdcard/FIRST/tflitemodels/myCustomModel.tflite";
     // Define the labels recognized in the model for TFOD (must be in training order!)
-    private static final String[] LABELS = {
-            "Pixel",
+    protected static final String[] LABELS = {
+            "B_Prop",
+            "R_Prop",
     };
+
+    public String side = "idk";
 
     /**
      * The variable to store our instance of the TensorFlow Object Detection processor.
      */
-    private TfodProcessor tfod;
+    protected TfodProcessor tfod;
 
     /**
      * The variable to store our instance of the vision portal.
      */
-    private VisionPortal visionPortal;
+    protected VisionPortal visionPortal;
+    protected Servo claw1, claw2, clawServo;
 
-    // sample mecanum drive for the trajectory
-    SampleMecanumDrive drive = new SampleMecanumDrive(hardwareMap);
+    protected DcMotorEx LArmMotor, RArmMotor;
+
+    //region PIDS
+    protected static PIDController vController;
+    protected static double Pv = 0.015, Iv = 0.002, Dv = 0.0005, Fv = 0.02; //
+    // Pv = 0.029, Iv = 0.001, Dv = 0.0005, Fv = 0.03
+    //
+    protected static int vTarget = 0;
+
+    protected double spdLMT = 14;
+
+    protected SampleMecanumDrive drive;
+
+    protected double x, y;
+
 
     @Override
+
     public void runOpMode() {
+        // sample mecanum drive for the trajectory
+        initialize();
+        waitForStart();
+
+        if (isStopRequested()) return;
+
+        if (opModeIsActive()) {
+            // run redside roadrunner
+            RRRoadRunner(drive);
+        }
+        // update pose
+        PoseStorage.currentPose = drive.getPoseEstimate();
+
+    }   // end runOpMode()
+
+    public void RRRoadRunner(SampleMecanumDrive drive){
+        //nothing
+    }
+
+    public void weGoRam(SampleMecanumDrive drive, Trajectory traj){
+        int localSpdLMT = 14;
+        Trajectory forward = drive.trajectoryBuilder(traj.end())
+                .forward(24,
+                        SampleMecanumDrive.getVelocityConstraint(localSpdLMT, DriveConstants.MAX_ANG_VEL, DriveConstants.TRACK_WIDTH),
+                        SampleMecanumDrive.getAccelerationConstraint(DriveConstants.MAX_ACCEL))
+                .build();
+
+        Trajectory backwards = drive.trajectoryBuilder(forward.end())
+                .back(11,
+                        SampleMecanumDrive.getVelocityConstraint(localSpdLMT, DriveConstants.MAX_ANG_VEL, DriveConstants.TRACK_WIDTH),
+                        SampleMecanumDrive.getAccelerationConstraint(DriveConstants.MAX_ACCEL))
+                .build();
+
+        clawServo.setPosition(ClawServoGround);
+        drive.followTrajectory(forward);
+        sleep(500);
+        drive.followTrajectory(backwards);
+        sleep(500);
+    }
+    // TODO: Make this method
+    public void placePixelLine(){
+        // place pixel onto line
+        clawServo.setPosition(ClawServoGround);
+        sleep(1000);
+        claw1.setPosition(Claw1OpenPos); // open
+        sleep(500);
+        clawServo.setPosition(ClawServoBoard);
+    }
+
+    // TODO: Make this method
+    //HARDWARE
+    public void placePixelBoard(int target){
+
+        int vPosition = LArmMotor.getCurrentPosition();
+
+        if (Math.abs(vPosition - target) <= 10) {
+            vTarget = target;
+            double pos = (435 - ((vTarget - 100) / (11/3f))) / 300;
+            if (pos > 1)
+                pos = 1f;
+            clawServo.setPosition(pos);
+            claw2.setPosition(Claw2OpenPos);
+        }
+        else if (vPosition > target){
+            vTarget -= 10;
+        } else if (vPosition < target) {
+            vTarget += 10;
+        }
+
+        if (vTarget > 700)
+            vTarget = 700;
+        else if (vTarget < 20)
+            vTarget = 20;
+
+        vController.setPID(Pv, Iv, Dv);
+
+        //region PID UPDATING
+        double vPID = vController.calculate(vPosition, vTarget);
+
+        double ticks_per_degree_tetrix = 3.84444444444444444444444444444;
+        double vFeed = Math.cos(Math.toRadians((vTarget - 330) / ticks_per_degree_tetrix)) * Fv;
+
+        LArmMotor.setPower(vPID + vFeed);
+        RArmMotor.setPower(vPID + vFeed);
+        //end code
+
+        //region PID UPDATING
+        LArmMotor.setPower(vPID + vFeed);
+        RArmMotor.setPower(vPID + vFeed);
+        //endregion PID UPDATING
+
+        telemetry.addData("vPosition", vPosition);
+        telemetry.addData("vTarget", vTarget);
+        telemetry.update();
+    }
+
+    public void placeBoard(){
+        // TODO: Place pixel on board
+        while (claw2.getPosition() == Claw2ClosePos) {
+            placePixelBoard(680);
+            if (!opModeIsActive()) break;
+        }
+
+        clawServo.setPosition(ClawServoBoard);
+
+        while (vTarget > 30) {
+            placePixelBoard(20);
+            if (!opModeIsActive()) break;
+        }
+    }
+
+    /**
+     * Initialize the TensorFlow Object Detection processor.
+     */
+
+    public void initialize() {
+        // sample mecanum drive for the trajectory
+        drive = new SampleMecanumDrive(hardwareMap);
+        claw1 = hardwareMap.get(Servo.class, "claw1");
+        claw2 = hardwareMap.get(Servo.class, "claw2");
+        clawServo = hardwareMap.get(Servo.class, "clawServo");
+        // init claw pos
+        clawServo.setPosition(ClawServoBoard);
+        claw1.setPosition(Claw1ClosePos);
+        claw2.setPosition(Claw2ClosePos);
         initTfod();
 
         // Wait for the DS start button to be touched.
         telemetry.addData("DS preview on/off", "3 dots, Camera Stream");
         telemetry.addData(">", "Touch Play to start OpMode");
         telemetry.update();
-        waitForStart();
 
-        // run redside roadrunner
-        RRRoadRunner(drive);
+        LynxModule chub = hardwareMap.getAll(LynxModule.class).get(0);
+        vController = new PIDController(Pv, Iv, Dv);
 
-        if (isStopRequested()) return;
+        LArmMotor = hardwareMap.get(DcMotorEx.class, "LArm");
+        LArmMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        LArmMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        RArmMotor = hardwareMap.get(DcMotorEx.class, "RArm");
+        RArmMotor.setDirection(DcMotorEx.Direction.REVERSE);
+        vTarget = 0;
 
-        if (opModeIsActive()) {
-            while (opModeIsActive()) {
-
-                telemetryTfod();
-
-                // Push telemetry to the Driver Station.
-                telemetry.update();
-
-                // Save CPU resources; can resume streaming when needed.
-                if (gamepad1.dpad_down) {
-                    visionPortal.stopStreaming();
-                } else if (gamepad1.dpad_up) {
-                    visionPortal.resumeStreaming();
-                }
-
-                // Share the CPU.
-                sleep(20);
-            }
-        }
-
-        // Save more CPU resources when camera is no longer needed.
-        visionPortal.close();
-
-    }   // end runOpMode()
-
-    private void RRRoadRunner(SampleMecanumDrive drive){
-        // ROADRUNNER RED SIDE
-        // assuming our starting point as (0,0) so trajectories will be relative to where we start
-        // increasing heading goes counterclockwise
-
-        Pose2d startPos = new Pose2d(12, -60, Math.toRadians(90));
-
-        // forward to tape areas
-        Trajectory traj = drive.trajectoryBuilder(startPos)
-                .forward(24)
-                .back(24)
-                .strafeRight(12)
-                .splineToLinearHeading(new Pose2d(38, -36, Math.toRadians(180)), Math.toRadians(90))
-                .back(10)
-                .forward(8)
-                .splineToLinearHeading(new Pose2d(58, -60, Math.toRadians(180)), Math.toRadians(0))
-                .build();
-
-        // scan for pixel or prop somehow with tensorflow
-        // TODO: Add tensorflow stuff here
-
-
-        drive.followTrajectory(traj);
-        // TODO: Add tensorflow here
-
+        sleep(1000);
     }
 
-    /**
-     * Initialize the TensorFlow Object Detection processor.
-     */
-    private void initTfod() {
+    public void getSide() {
+        boolean seen = false;
+        while (!seen) {
+            if (isStopRequested()) seen = true;
+            //Init the model whatever
+            List<Recognition> currentRecognitions = tfod.getRecognitions();
+
+            // Step through the list of recognitions and check info for each one.
+            for (Recognition recognition : currentRecognitions) {
+                x = (recognition.getLeft() + recognition.getRight()) / 2;
+                y = (recognition.getTop() + recognition.getBottom()) / 2;
+                double width = (recognition.getRight() - recognition.getLeft());
+                double height = (recognition.getBottom() - recognition.getTop());
+                String label = recognition.getLabel();
+
+                    if (label == "B_Prop") {
+                        side = "B";
+                        seen = true;
+                        break;
+                    } else if (label == "R_Prop") {
+                        side = "R";
+                        seen = true;
+                        break;
+                    }
+            }   // end for() loop
+
+            if (x < 213)
+                side += "L";
+            else if (x > 430)
+                side += "R";
+            else if (213 < x && x < 460)
+                side += "M";
+            else
+                side += "N"; // if N means broken
+
+
+            //telemetry.addData("We going: ", side);
+            telemetry.update();
+            telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
+        }
+    }
+
+    public void initTfod() {
 
         // Create the TensorFlow processor by using a builder.
         tfod = new TfodProcessor.Builder()
 
+                // TODO: Make sure lines that we need are NOT commented out
                 // With the following lines commented out, the default TfodProcessor Builder
                 // will load the default model for the season. To define a custom model to load,
                 // choose one of the following:
                 //   Use setModelAssetName() if the custom TF Model is built in as an asset (AS only).
                 //   Use setModelFileName() if you have downloaded a custom team model to the Robot Controller.
-                //.setModelAssetName(TFOD_MODEL_ASSET)
+                .setModelAssetName(TFOD_MODEL_ASSET)
                 //.setModelFileName(TFOD_MODEL_FILE)
 
                 // The following default settings are available to un-comment and edit as needed to
                 // set parameters for custom models.
-                //.setModelLabels(LABELS)
-                //.setIsModelTensorFlow2(true)
-                //.setIsModelQuantized(true)
+                .setModelLabels(LABELS)
+                .setIsModelTensorFlow2(true)
+                .setIsModelQuantized(true)
                 //.setModelInputSize(300)
                 //.setModelAspectRatio(16.0 / 9.0)
 
@@ -217,17 +373,17 @@ public class Autonomous extends LinearOpMode {
         visionPortal = builder.build();
 
         // Set confidence threshold for TFOD recognitions, at any time.
-        //tfod.setMinResultConfidence(0.75f);
+        tfod.setMinResultConfidence(0.85f);
 
         // Disable or re-enable the TFOD processor at any time.
-        //visionPortal.setProcessorEnabled(tfod, true);
+        visionPortal.setProcessorEnabled(tfod, true);
 
     }   // end method initTfod()
 
     /**
      * Add telemetry about TensorFlow Object Detection (TFOD) recognitions.
      */
-    private void telemetryTfod() {
+    public void telemetryTfod() {
 
         List<Recognition> currentRecognitions = tfod.getRecognitions();
         telemetry.addData("# Objects Detected", currentRecognitions.size());
