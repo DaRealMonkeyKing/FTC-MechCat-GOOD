@@ -1,12 +1,10 @@
-package org.firstinspires.ftc.teamcode.MechCat.ControlledPeriod;
+package org.firstinspires.ftc.teamcode.MechCat.ControlledPeriod.Tests;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
-import org.firstinspires.ftc.teamcode.MechCat.ControlledPeriod.Arm;
-
-@TeleOp(name = "ArmTest")
+//@TeleOp(name = "ArmTest")
 public class Test extends LinearOpMode {
-    public Arm arm;
+    public ArmTEST arm;
         //arm.init();
 
     @Override
@@ -18,6 +16,6 @@ public class Test extends LinearOpMode {
 
     }
     public void test() {
-        arm.vTarget = 200;
+      //  arm.vTarget = 200;
     }
 }

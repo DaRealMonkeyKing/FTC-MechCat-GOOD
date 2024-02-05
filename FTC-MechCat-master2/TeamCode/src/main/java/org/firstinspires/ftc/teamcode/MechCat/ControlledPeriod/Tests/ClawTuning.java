@@ -1,4 +1,4 @@
-package org.firstinspires.ftc.teamcode.MechCat.ControlledPeriod;
+package org.firstinspires.ftc.teamcode.MechCat.ControlledPeriod.Tests;
 
 import com.acmerobotics.dashboard.config.Config;
 import com.arcrobotics.ftclib.hardware.ServoEx;
@@ -9,7 +9,7 @@ import com.qualcomm.robotcore.hardware.Servo;
 @TeleOp(name = "ClawTuner")
 @Config
 public class ClawTuning extends OpMode {
-    public static double claw1pos = 0;
+    public static double claw1pos = 0.6;
     public static double claw2pos = 0;
     public static double clawServopos = 1;
     Servo claw1, claw2, clawServo;

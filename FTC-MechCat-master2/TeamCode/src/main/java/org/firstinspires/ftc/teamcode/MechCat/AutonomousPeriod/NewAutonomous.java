@@ -31,8 +31,6 @@ package org.firstinspires.ftc.teamcode.MechCat.AutonomousPeriod;
 
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
-import com.acmerobotics.roadrunner.geometry.Pose2d;
-import com.acmerobotics.roadrunner.geometry.Vector2d;
 import com.acmerobotics.roadrunner.trajectory.Trajectory;
 import com.arcrobotics.ftclib.controller.PIDController;
 import com.qualcomm.hardware.lynx.LynxModule;
@@ -44,6 +42,7 @@ import com.qualcomm.robotcore.hardware.Servo;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.BuiltinCameraDirection;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
 import org.firstinspires.ftc.robotcore.external.tfod.Recognition;
+import org.firstinspires.ftc.teamcode.MechCat.ControlledPeriod.ArmController;
 import org.firstinspires.ftc.teamcode.drive.DriveConstants;
 import org.firstinspires.ftc.teamcode.drive.SampleMecanumDrive;
 import org.firstinspires.ftc.vision.VisionPortal;
@@ -57,6 +56,7 @@ import static org.firstinspires.ftc.teamcode.MechCat.AutonomousPeriod.AutoConsta
 import static org.firstinspires.ftc.teamcode.MechCat.AutonomousPeriod.AutoConstants.ClawServoBoard;
 import static org.firstinspires.ftc.teamcode.MechCat.AutonomousPeriod.AutoConstants.ClawServoGround;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /*
@@ -83,13 +83,13 @@ import java.util.List;
 // dpad down to retract slider
 // dpad left and right to release corresponding claw
 
-public class Autonomous extends LinearOpMode {
+public class NewAutonomous extends LinearOpMode {
 
     protected static final boolean USE_WEBCAM = true;  // true for webcam, false for phone camera
 
     // TFOD_MODEL_ASSET points to a model file stored in the project Asset location,
     // this is only used for Android Studio when using models in Assets.
-    protected static final String TFOD_MODEL_ASSET = "OurCoolModel.tflite";
+    protected static final String TFOD_MODEL_ASSET = "OurCoolModel2.tflite";
     // TFOD_MODEL_FILE points to a model file stored onboard the Robot Controller's storage,
     // this is used when uploading models directly to the RC using the model upload interface.
     //private static final String TFOD_MODEL_FILE = "/sdcard/FIRST/tflitemodels/myCustomModel.tflite";
@@ -112,14 +112,10 @@ public class Autonomous extends LinearOpMode {
     protected VisionPortal visionPortal;
     protected Servo claw1, claw2, clawServo;
 
-    protected DcMotorEx LArmMotor, RArmMotor;
-
-    //region PIDS
-    protected static PIDController vController;
-    protected static double Pv = 0.015, Iv = 0.002, Dv = 0.0005, Fv = 0.02; //
-    // Pv = 0.029, Iv = 0.001, Dv = 0.0005, Fv = 0.03
-    //
-    protected static int vTarget = 0;
+    DcMotorEx LArmMotor, RArmMotor, ExtendArmMotor;
+    ArmController arm;
+    Thread PID;
+    public List<Trajectory> trajs = new ArrayList<>();
 
     protected double spdLMT = 14;
 
@@ -127,9 +123,7 @@ public class Autonomous extends LinearOpMode {
 
     protected double x, y;
 
-
     @Override
-
     public void runOpMode() {
         // sample mecanum drive for the trajectory
         initialize();
@@ -150,26 +144,6 @@ public class Autonomous extends LinearOpMode {
         //nothing
     }
 
-    public void weGoRam(SampleMecanumDrive drive, Trajectory traj){
-        int localSpdLMT = 14;
-        Trajectory forward = drive.trajectoryBuilder(traj.end())
-                .forward(24,
-                        SampleMecanumDrive.getVelocityConstraint(localSpdLMT, DriveConstants.MAX_ANG_VEL, DriveConstants.TRACK_WIDTH),
-                        SampleMecanumDrive.getAccelerationConstraint(DriveConstants.MAX_ACCEL))
-                .build();
-
-        Trajectory backwards = drive.trajectoryBuilder(forward.end())
-                .back(11,
-                        SampleMecanumDrive.getVelocityConstraint(localSpdLMT, DriveConstants.MAX_ANG_VEL, DriveConstants.TRACK_WIDTH),
-                        SampleMecanumDrive.getAccelerationConstraint(DriveConstants.MAX_ACCEL))
-                .build();
-
-        clawServo.setPosition(ClawServoGround);
-        drive.followTrajectory(forward);
-        sleep(500);
-        drive.followTrajectory(backwards);
-        sleep(500);
-    }
     // TODO: Make this method
     public void placePixelLine(){
         // place pixel onto line
@@ -182,63 +156,35 @@ public class Autonomous extends LinearOpMode {
 
     // TODO: Make this method
     //HARDWARE
-    public void placePixelBoard(int target){
-
-        int vPosition = LArmMotor.getCurrentPosition();
-
-        if (Math.abs(vPosition - target) <= 10) {
-            vTarget = target;
-            double pos = (435 - ((vTarget - 100) / (11/3f))) / 300;
-            if (pos > 1)
-                pos = 1f;
-            clawServo.setPosition(pos);
-            claw2.setPosition(Claw2OpenPos);
-        }
-        else if (vPosition > target){
-            vTarget -= 10;
-        } else if (vPosition < target) {
-            vTarget += 10;
-        }
-
-        if (vTarget > 700)
-            vTarget = 700;
-        else if (vTarget < 20)
-            vTarget = 20;
-
-        vController.setPID(Pv, Iv, Dv);
-
-        //region PID UPDATING
-        double vPID = vController.calculate(vPosition, vTarget);
-
-        double ticks_per_degree_tetrix = 3.84444444444444444444444444444;
-        double vFeed = Math.cos(Math.toRadians((vTarget - 330) / ticks_per_degree_tetrix)) * Fv;
-
-        LArmMotor.setPower(vPID + vFeed);
-        RArmMotor.setPower(vPID + vFeed);
-        //end code
-
-        //region PID UPDATING
-        LArmMotor.setPower(vPID + vFeed);
-        RArmMotor.setPower(vPID + vFeed);
-        //endregion PID UPDATING
-
-        telemetry.addData("vPosition", vPosition);
-        telemetry.addData("vTarget", vTarget);
-        telemetry.update();
+    public void setArm(int Target){
+        arm.ArmTo(Target);
     }
 
-    public void placeBoard(){
-        // TODO: Place pixel on board
-        while (claw2.getPosition() == Claw2ClosePos) {
-            placePixelBoard(680);
-            if (!opModeIsActive()) break;
+    public void setSlider(int Target){
+        arm.SlideTo(Target);
+    }
+
+    public void clawServoDown(boolean isDown){
+        if (isDown) {
+            clawServo.setPosition(ClawServoGround);
+        } else {
+            clawServo.setPosition(ClawServoBoard);
         }
+    }
 
-        clawServo.setPosition(ClawServoBoard);
+    public void clawRightOpen(boolean isOpen){
+        if (isOpen) {
+            claw2.setPosition(Claw2OpenPos);
+        } else {
+            claw2.setPosition(Claw2ClosePos);
+        }
+    }
 
-        while (vTarget > 30) {
-            placePixelBoard(20);
-            if (!opModeIsActive()) break;
+    public void clawLeftOpen(boolean isOpen){
+        if (isOpen) {
+            claw1.setPosition(Claw1OpenPos);
+        } else {
+            claw1.setPosition(Claw1ClosePos);
         }
     }
 
@@ -263,25 +209,30 @@ public class Autonomous extends LinearOpMode {
         telemetry.addData(">", "Touch Play to start OpMode");
         telemetry.update();
 
-        LynxModule chub = hardwareMap.getAll(LynxModule.class).get(0);
-        vController = new PIDController(Pv, Iv, Dv);
-
-        LArmMotor = hardwareMap.get(DcMotorEx.class, "LArm");
-        LArmMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        LArmMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        LArmMotor = hardwareMap.get(DcMotorEx.class, "perpendicularEncoder");
         RArmMotor = hardwareMap.get(DcMotorEx.class, "RArm");
-        RArmMotor.setDirection(DcMotorEx.Direction.REVERSE);
-        vTarget = 0;
+        ExtendArmMotor = hardwareMap.get(DcMotorEx.class, "slideMotor");
 
-        sleep(1000);
+        ExtendArmMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        ExtendArmMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+
+        RArmMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        RArmMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+
+        arm = new ArmController(LArmMotor, RArmMotor, ExtendArmMotor);
+        arm.PIDactive(true);
+        PID = new Thread(arm);
+        PID.start();
     }
 
     public void getSide() {
-        boolean seen = false;
-        while (!seen) {
-            if (isStopRequested()) seen = true;
+        boolean loop = true;
+        int count = 3000; //
+        while (loop) {
+            if (isStopRequested()) loop = false;
             //Init the model whatever
             List<Recognition> currentRecognitions = tfod.getRecognitions();
+            double biggestArea = 0;
 
             // Step through the list of recognitions and check info for each one.
             for (Recognition recognition : currentRecognitions) {
@@ -291,31 +242,35 @@ public class Autonomous extends LinearOpMode {
                 double height = (recognition.getBottom() - recognition.getTop());
                 String label = recognition.getLabel();
 
-                    if (label == "B_Prop") {
-                        side = "B";
-                        seen = true;
-                        break;
-                    } else if (label == "R_Prop") {
-                        side = "R";
-                        seen = true;
-                        break;
-                    }
+                if (width * height > biggestArea){
+                    side = String.valueOf(label.charAt(0));
+                    biggestArea = width * height;
+                    if (x < 213)
+                        side += "L";
+                    else if (x > 430)
+                        side += "R";
+                    else if (213 < x && x < 460)
+                        side += "M";
+                    else
+                        side += "N"; // if N means broken
+                    telemetry.addData("We going: ", side);
+                    telemetry.addData("x val: ", x);
+                    telemetry.addData("area: ", width * height);
+                }
             }   // end for() loop
-
-            if (x < 213)
-                side += "L";
-            else if (x > 430)
-                side += "R";
-            else if (213 < x && x < 460)
-                side += "M";
-            else
-                side += "N"; // if N means broken
-
-
-            //telemetry.addData("We going: ", side);
+            telemetry.addData("Buffer time left: ", count);
             telemetry.update();
             telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
+            sleep(1);
+            count -= 1;
+            if (count <= 0) loop = false;
         }
+
+
+
+        //telemetry.addData("We going: ", side);
+        //telemetry.update();
+        //telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
     }
 
     public void initTfod() {
@@ -400,5 +355,7 @@ public class Autonomous extends LinearOpMode {
         }   // end for() loop
 
     }   // end method telemetryTfod()
+
+
 
 }   // end class

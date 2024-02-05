@@ -20,7 +20,7 @@ import org.firstinspires.ftc.teamcode.drive.PoseStorage;
 import org.firstinspires.ftc.teamcode.drive.SampleMecanumDrive;
 
 
-@TeleOp(name = "Controller")
+//@TeleOp(name = "Controller")
 @Config
 public class Controller extends OpMode {
 

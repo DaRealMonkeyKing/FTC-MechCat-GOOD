@@ -1,32 +1,40 @@
-package org.firstinspires.ftc.teamcode.MechCat.ControlledPeriod;
+package org.firstinspires.ftc.teamcode.MechCat.ControlledPeriod.Tests;
+
+import static com.qualcomm.robotcore.hardware.DcMotor.ZeroPowerBehavior.BRAKE;
 
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.config.Config;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
+import com.acmerobotics.roadrunner.geometry.Pose2d;
+import com.acmerobotics.roadrunner.trajectory.Trajectory;
 import com.arcrobotics.ftclib.controller.PIDController;
 import com.qualcomm.hardware.lynx.LynxModule;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
+import com.qualcomm.robotcore.hardware.Servo;
+import com.qualcomm.robotcore.util.ElapsedTime;
 
-@TeleOp
+import org.firstinspires.ftc.robotcore.external.navigation.VoltageUnit;
+import org.firstinspires.ftc.teamcode.drive.SampleMecanumDrive;
+
+import java.util.concurrent.TimeUnit;
+
+//@TeleOp
 @Config
-public class Arm extends OpMode
+public class blab extends OpMode
 {
-
-    public Arm() {
-
-    }
     //HARDWARE
     private DcMotorEx LArmMotor, RArmMotor;
 
     //region PIDS
     public static PIDController vController;
-    public static double Pv = 0.015, Iv = 0.002, Dv = 0.0005, Fv = 0.02; //
-    // Pv = 0.029, Iv = 0.001, Dv = 0.0005, Fv = 0.03
-    //
+    public static double Pv = 0.003, Iv = 0, Dv = 0, Fv = 0.3; // Pv = 0.003, Iv = 0, Dv = 0, Fv = 0.3
+    // Pv = 0.029, Iv = 0, Dv = 0.0013, Fv = 0.03
     public static int vTarget = 0;
+
+
 
     // PID tuning: static the above 3 variables, upload code, then tune
 
@@ -42,16 +50,10 @@ public class Arm extends OpMode
         LArmMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         RArmMotor = hardwareMap.get(DcMotorEx.class, "RArm");
         RArmMotor.setDirection(DcMotorEx.Direction.REVERSE);
-        vTarget = 0;
     }
 
     @Override
     public void loop() {
-
-        if (vTarget > 640)
-            vTarget = 640;
-        else if (vTarget < 30)
-            vTarget = 30;
 
         //code
         int vPosition = LArmMotor.getCurrentPosition();
@@ -79,13 +81,6 @@ public class Arm extends OpMode
         telemetry.addData("vPosition", vPosition);
         telemetry.addData("vTarget", vTarget);
         telemetry.update();
-
-        if (gamepad2.a) {
-            vTarget = 200;
-        }
-
-        if (gamepad2.b) {
-            vTarget = 400;
-        }
     }
+
 }

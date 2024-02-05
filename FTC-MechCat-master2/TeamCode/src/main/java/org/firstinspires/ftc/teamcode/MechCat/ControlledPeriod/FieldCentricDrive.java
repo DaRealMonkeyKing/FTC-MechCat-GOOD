@@ -31,7 +31,7 @@ import org.firstinspires.ftc.teamcode.drive.SampleMecanumDrive;
  * <p>
  * See lines 42-57.
  */
-@TeleOp(group = "advanced")
+//@TeleOp(group = "advanced")
 @Config
 public class FieldCentricDrive extends LinearOpMode {
     //region PIDS
@@ -82,7 +82,7 @@ public class FieldCentricDrive extends LinearOpMode {
         claw1.setPosition(Claw1ClosePos);
         claw2.setPosition(Claw2ClosePos);
         clawServo.setPosition(ClawServoGround);
-        planeServo.setPosition(0);
+        planeServo.setPosition(0.5);
 
         waitForStart();
 
@@ -141,13 +141,13 @@ public class FieldCentricDrive extends LinearOpMode {
         vController.setPID(Pv, Iv, Dv);
 
         // set limit for arm movement
-        if (vTarget > 640)
-            vTarget = 640;
+        if (vTarget > 750)
+            vTarget = 750;
         else if (vTarget < 20)
             vTarget = 20;
 
         if (vTarget > 250) {
-            double pos = (435 - ((vTarget - 100) / (11/3f))) / 300;
+            double pos = (440 - ((vTarget - 100) / (11/3f))) / 300;
             if (pos > 1)
                 pos = 1f;
             clawServo.setPosition(pos);
@@ -193,9 +193,9 @@ public class FieldCentricDrive extends LinearOpMode {
 
     public void shootPlane(boolean power) {
         if (power)
-            planeServo.setPosition(0.5);
-        else
             planeServo.setPosition(0);
+        else
+            planeServo.setPosition(0.5);
         telemetry.addData("Servo: ", power);
     }
 }
