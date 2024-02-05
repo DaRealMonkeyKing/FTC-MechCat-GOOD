@@ -27,7 +27,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.firstinspires.ftc.teamcode.MechCat.AutonomousPeriod;
+package org.firstinspires.ftc.teamcode.MechCat.AutonomousPeriod.Old;
 
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
@@ -57,6 +57,7 @@ import static org.firstinspires.ftc.teamcode.MechCat.AutonomousPeriod.AutoConsta
 import static org.firstinspires.ftc.teamcode.MechCat.AutonomousPeriod.AutoConstants.ClawServoBoard;
 import static org.firstinspires.ftc.teamcode.MechCat.AutonomousPeriod.AutoConstants.ClawServoGround;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /*
@@ -79,7 +80,7 @@ import java.util.List;
 // 6.5 inches to center from sides
 
 @com.qualcomm.robotcore.eventloop.opmode.Autonomous(name = "AutonomousRL")
-public class AutonomousRedLeft extends LinearOpMode {
+public class AutoRedLeftOld extends LinearOpMode {
 
     private static final boolean USE_WEBCAM = true;  // true for webcam, false for phone camera
 
@@ -116,6 +117,8 @@ public class AutonomousRedLeft extends LinearOpMode {
     public static int vTarget = 0;
 
     private double spdLMT = 14;
+
+    private List<Trajectory> trajs = new ArrayList<>();
     @Override
     public void runOpMode() {
         // sample mecanum drive for the trajectory

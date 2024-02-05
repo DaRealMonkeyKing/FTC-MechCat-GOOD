@@ -27,7 +27,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.firstinspires.ftc.teamcode.MechCat.AutonomousPeriod;
+package org.firstinspires.ftc.teamcode.MechCat.AutonomousPeriod.Old;
 
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
@@ -79,7 +79,7 @@ import java.util.List;
 // 6.5 inches to center from sides
 
 @com.qualcomm.robotcore.eventloop.opmode.Autonomous(name = "AutonomousRR")
-public class AutonomousRedRight extends LinearOpMode {
+public class AutoRedRightOld extends LinearOpMode {
 
     private static final boolean USE_WEBCAM = true;  // true for webcam, false for phone camera
 

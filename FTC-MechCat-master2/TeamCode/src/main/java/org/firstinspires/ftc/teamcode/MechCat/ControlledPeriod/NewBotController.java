@@ -28,7 +28,7 @@ public class NewBotController extends LinearOpMode {
     Servo planeServo, claw1, claw2, clawServo;
     ArmController arm;
     Thread PID;
-    public double armPos = 0, slidePos = -800;
+    public double armPos = 0, slidePos = -800, count = 150;
     public boolean lastStateClaw = false, lastStateOut = false, outtake = false;
 
     @Override
@@ -85,7 +85,7 @@ public class NewBotController extends LinearOpMode {
     }
 
     public void run() {
-        move(gamepad1.right_bumper);
+        move();
 //        moveArm(gamepad1.right_trigger, gamepad1.left_trigger);
 //        extendArm(gamepad1.y, gamepad1.a);
         outtake(gamepad1.a);
@@ -94,11 +94,8 @@ public class NewBotController extends LinearOpMode {
         telemetry.update();
     }
 
-    public void move(boolean crawl) {
+    public void move() {
         double mltp = 0.8;
-
-        if (crawl)
-            mltp = 0.4;
 
         double drive = -gamepad1.left_stick_y;
         double strafe = -gamepad1.left_stick_x;
@@ -138,7 +135,7 @@ public class NewBotController extends LinearOpMode {
         }
         lastStateOut = activate;
         if (outtake){
-            extendArm(gamepad1.y, gamepad1.a);
+            extendArm(gamepad1.right_bumper, gamepad1.left_bumper);
             clawServo.setPosition(ClawServoBoard);
         }
     }
@@ -195,10 +192,17 @@ public class NewBotController extends LinearOpMode {
             }
         }
         lastStateClaw = down;
-        if (Math.abs(claw1.getPosition() - Claw1OpenPos) < 0.01){
-            clawServo.setPosition(ClawServoGround);
-        } else {
-            clawServo.setPosition(ClawServoBoard / 3);
+        if (!outtake) {
+            if (Math.abs(claw1.getPosition() - Claw1OpenPos) < 0.01) {
+                clawServo.setPosition(ClawServoGround);
+                count = 150;
+            } else {
+                if (count <= 0) {
+                    clawServo.setPosition(ClawServoBoard / 3);
+                } else {
+                    count -= 1;
+                }
+            }
         }
 
         telemetry.addData("Claw open?: ", claw1.getPosition());

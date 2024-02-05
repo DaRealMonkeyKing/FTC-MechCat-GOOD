@@ -27,7 +27,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.firstinspires.ftc.teamcode.MechCat.AutonomousPeriod;
+package org.firstinspires.ftc.teamcode.MechCat.AutonomousPeriod.Old;
 
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
@@ -78,8 +78,8 @@ import java.util.List;
 // 7 inches to center from front
 // 6.5 inches to center from sides
 
-@com.qualcomm.robotcore.eventloop.opmode.Autonomous(name = "AutonomousBR")
-public class AutonomousBlueRight extends LinearOpMode {
+@com.qualcomm.robotcore.eventloop.opmode.Autonomous(name = "AutonomousBL")
+public class AutoBlueLeftOld extends LinearOpMode {
 
     private static final boolean USE_WEBCAM = true;  // true for webcam, false for phone camera
 
@@ -161,7 +161,7 @@ public class AutonomousBlueRight extends LinearOpMode {
         // ROADRUNNER RED RIGHT-SIDE
         // increasing heading goes counterclockwise
 
-        Pose2d startPos = new Pose2d(-36, 60, Math.toRadians(270));
+        Pose2d startPos = new Pose2d(12, 60, Math.toRadians(270));
         drive.setPoseEstimate(startPos);
 
         // TODO: check / remake values for the trajectories as you see fit
@@ -174,29 +174,29 @@ public class AutonomousBlueRight extends LinearOpMode {
                 .build();
 
         Trajectory check2 = drive.trajectoryBuilder(check1.end())
-                .lineToLinearHeading(new Pose2d(-49, 34, Math.toRadians(0)),
+                .lineToLinearHeading(new Pose2d(23, 34, Math.toRadians(180)),
                         SampleMecanumDrive.getVelocityConstraint(spdLMT, DriveConstants.MAX_ANG_VEL, DriveConstants.TRACK_WIDTH),
                         SampleMecanumDrive.getAccelerationConstraint(DriveConstants.MAX_ACCEL)
                 )
                 .build();
 
         Trajectory toLeftBack = drive.trajectoryBuilder(check2.end())
-                .lineToLinearHeading(new Pose2d(47.1, 28, Math.toRadians(180)),
-                        SampleMecanumDrive.getVelocityConstraint(spdLMT * 1.5, DriveConstants.MAX_ANG_VEL, DriveConstants.TRACK_WIDTH),
+                .lineToLinearHeading(new Pose2d(50, 28, Math.toRadians(180)),
+                        SampleMecanumDrive.getVelocityConstraint(spdLMT, DriveConstants.MAX_ANG_VEL, DriveConstants.TRACK_WIDTH),
                         SampleMecanumDrive.getAccelerationConstraint(DriveConstants.MAX_ACCEL)
                 )
                 .build();
 
         Trajectory toMidBack = drive.trajectoryBuilder(check2.end())
-                .lineToLinearHeading(new Pose2d(47.6, 33, Math.toRadians(180)),
-                        SampleMecanumDrive.getVelocityConstraint(spdLMT * 1.5, DriveConstants.MAX_ANG_VEL, DriveConstants.TRACK_WIDTH),
+                .lineToLinearHeading(new Pose2d(49, 33, Math.toRadians(180)),
+                        SampleMecanumDrive.getVelocityConstraint(spdLMT, DriveConstants.MAX_ANG_VEL, DriveConstants.TRACK_WIDTH),
                         SampleMecanumDrive.getAccelerationConstraint(DriveConstants.MAX_ACCEL)
                 )
                 .build();
 
         Trajectory toRightBack = drive.trajectoryBuilder(check2.end())
-                .lineToLinearHeading(new Pose2d(48.1, 38.5, Math.toRadians(180)),
-                        SampleMecanumDrive.getVelocityConstraint(spdLMT * 1.5, DriveConstants.MAX_ANG_VEL, DriveConstants.TRACK_WIDTH),
+                .lineToLinearHeading(new Pose2d(49, 38.5, Math.toRadians(180)),
+                        SampleMecanumDrive.getVelocityConstraint(spdLMT, DriveConstants.MAX_ANG_VEL, DriveConstants.TRACK_WIDTH),
                         SampleMecanumDrive.getAccelerationConstraint(DriveConstants.MAX_ACCEL)
                 )
                 .build();
@@ -266,32 +266,32 @@ public class AutonomousBlueRight extends LinearOpMode {
         // Drive bot to back board
         //drive.followTrajectory(toBack);
 
-//        if (lBoard) {
-//            drive.followTrajectory(toLeftBack);
-//        } else if (mBoard) {
-//            drive.followTrajectory(toMidBack);
-//        } else if (rBoard) {
-//            drive.followTrajectory(toRightBack);
-//        } else {
-//            drive.followTrajectory(toMidBack);
-//        }
-//        drive.update();
-//
-//        // TODO: Place pixel on board
-//        while (claw2.getPosition() == Claw2ClosePos) {
-//            placePixelBoard(680);
-//        }
-//
-//        clawServo.setPosition(ClawServoBoard);
-//
-//        while (vTarget > 30) {
-//            placePixelBoard(20);
-//        }
-//        // Park bot
-//        drive.followTrajectory(toPark);
-//        drive.update();
-//        // update pose
-//        PoseStorage.currentPose = drive.getPoseEstimate();
+        if (lBoard) {
+            drive.followTrajectory(toLeftBack);
+        } else if (mBoard) {
+            drive.followTrajectory(toMidBack);
+        } else if (rBoard) {
+            drive.followTrajectory(toRightBack);
+        } else {
+            drive.followTrajectory(toMidBack);
+        }
+        drive.update();
+
+        // TODO: Place pixel on board
+        while (claw2.getPosition() == Claw2ClosePos) {
+            placePixelBoard(680);
+        }
+
+        clawServo.setPosition(ClawServoBoard);
+
+        while (vTarget > 30) {
+            placePixelBoard(20);
+        }
+        // Park bot
+        drive.followTrajectory(toPark);
+        drive.update();
+        // update pose
+        PoseStorage.currentPose = drive.getPoseEstimate();
     }
 
     private void weGoRam(SampleMecanumDrive drive, Trajectory traj){

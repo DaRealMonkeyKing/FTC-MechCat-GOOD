@@ -27,7 +27,9 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.firstinspires.ftc.teamcode.MechCat.AutonomousPeriod;
+package org.firstinspires.ftc.teamcode.MechCat.AutonomousPeriod.NewOld;
+
+import static org.firstinspires.ftc.teamcode.MechCat.AutonomousPeriod.AutoConstants.ClawServoGround;
 
 import com.acmerobotics.roadrunner.geometry.Pose2d;
 import com.acmerobotics.roadrunner.geometry.Vector2d;
@@ -55,8 +57,8 @@ import org.firstinspires.ftc.teamcode.drive.SampleMecanumDrive;
 // 7 inches to center from front
 // 6.5 inches to center from sides
 
-@com.qualcomm.robotcore.eventloop.opmode.Autonomous(name = "AutonomousAudience")
-public class AutonomousAudience extends Autonomous {
+//@com.qualcomm.robotcore.eventloop.opmode.Autonomous(name = "AutonomousBoard")
+public class AutonomousBoard extends Autonomous {
 
     @Override
     public void runOpMode() {
@@ -85,7 +87,7 @@ public class AutonomousAudience extends Autonomous {
             invert = -1;
             addAngle = Math.toRadians(0);
             addY = 0;
-            Pose2d startPos = new Pose2d(-36, 60 * invert, Math.toRadians(90) + addAngle);
+            Pose2d startPos = new Pose2d(12, 60 * invert, Math.toRadians(90) + addAngle);
             drive.setPoseEstimate(startPos);
             if (whatSidussy.charAt(1) == 'R')
                 runBoardSide(drive, invert, addY, startPos);
@@ -97,7 +99,7 @@ public class AutonomousAudience extends Autonomous {
             invert = 1;
             addAngle = Math.toRadians(180);
             addY = 70;
-            Pose2d startPos = new Pose2d(-36, 60 * invert, Math.toRadians(90) + addAngle);
+            Pose2d startPos = new Pose2d(12, 60 * invert, Math.toRadians(90) + addAngle);
             drive.setPoseEstimate(startPos);
             if (whatSidussy.charAt(1) == 'L')
                 runBoardSide(drive, invert, addY, startPos);
@@ -116,31 +118,20 @@ public class AutonomousAudience extends Autonomous {
 // TODO: check / remake values for the trajectories as you see fit
     private void runBoardSide(SampleMecanumDrive drive, double invert, double addY, Pose2d startpos){
         Trajectory goToPixel = drive.trajectoryBuilder(startpos)
-                .splineToSplineHeading(new Pose2d(-31, 35 * invert, Math.toRadians(0)), Math.toRadians(340))
+                .splineToSplineHeading(new Pose2d(33, 33 * invert, Math.toRadians(180)), Math.toRadians(330))
                 .build();
 
-        Trajectory goToWhitePixel = drive.trajectoryBuilder((goToPixel.end()))
-                .lineToLinearHeading(new Pose2d(-55, 35 * invert, Math.toRadians(180)))
-                .build();
-
-        Trajectory goBackBackBack = drive.trajectoryBuilder(goToWhitePixel.end())
-                .lineToLinearHeading(new Pose2d(-55, 34 * invert, Math.toRadians(180)))
-                .splineToConstantHeading(new Vector2d(40, -15), Math.toRadians(350))
-                .build();
-
-        Trajectory goToBack = drive.trajectoryBuilder(goBackBackBack.end())
-                .lineToLinearHeading(new Pose2d(50, -42 + addY, Math.toRadians(180)))
+        Trajectory goToBack = drive.trajectoryBuilder(goToPixel.end())
+                .lineToLinearHeading(new Pose2d(49, -31.5 + addY, Math.toRadians(180)))
                 .build();
 
         Trajectory goPark = drive.trajectoryBuilder(goToBack.end())
                 .forward(8)
-                .splineToConstantHeading(new Vector2d(54, 11 * invert), Math.toRadians(0))
+                .splineToConstantHeading(new Vector2d(54, 61.5 * invert), Math.toRadians(0))
                 .build();
 
         drive.followTrajectory(goToPixel);
         placePixelLine();
-        drive.followTrajectory(goToWhitePixel);
-        drive.followTrajectory(goBackBackBack);
         drive.followTrajectory(goToBack);
         placeBoard();
         drive.followTrajectory(goPark);
@@ -149,31 +140,21 @@ public class AutonomousAudience extends Autonomous {
     // TODO: check / remake values for the trajectories as you see fit
     private void runMid(SampleMecanumDrive drive, double invert, double addY, Pose2d startpos){
         Trajectory goToPixel = drive.trajectoryBuilder(startpos)
-                .forward(24)
+                .forward(25)
                 .build();
 
-        Trajectory goToWhitePixel = drive.trajectoryBuilder((goToPixel.end()))
-                .lineToLinearHeading(new Pose2d(-55, 35 * invert, Math.toRadians(180)))
-                .build();
-
-        Trajectory goBackBackBack = drive.trajectoryBuilder(goToWhitePixel.end())
-                .lineToLinearHeading(new Pose2d(-55, 34 * invert, Math.toRadians(180)))
-                .splineToConstantHeading(new Vector2d(40, -15), Math.toRadians(350))
-                .build();
-
-        Trajectory goToBack = drive.trajectoryBuilder(goBackBackBack.end())
-                .lineToLinearHeading(new Pose2d(50, -36 + addY, Math.toRadians(180)))
+        Trajectory goToBack = drive.trajectoryBuilder(goToPixel.end())
+                .lineToLinearHeading(new Pose2d(49, -36 + addY, Math.toRadians(180)))
                 .build();
 
         Trajectory goPark = drive.trajectoryBuilder(goToBack.end())
                 .forward(8)
-                .splineToConstantHeading(new Vector2d(54, 11 * invert), Math.toRadians(0))
+                .splineToConstantHeading(new Vector2d(54, 61.5 * invert), Math.toRadians(0))
                 .build();
 
+        clawServo.setPosition(ClawServoGround);
         drive.followTrajectory(goToPixel);
         placePixelLine();
-        drive.followTrajectory(goToWhitePixel);
-        drive.followTrajectory(goBackBackBack);
         drive.followTrajectory(goToBack);
         placeBoard();
         drive.followTrajectory(goPark);
@@ -182,50 +163,24 @@ public class AutonomousAudience extends Autonomous {
     // TODO: check / remake values for the trajectories as you see fit
     private void runAudienceSide(SampleMecanumDrive drive, double invert, double addY, Pose2d startpos){
         Trajectory goToPixel = drive.trajectoryBuilder(startpos)
-                .splineToSplineHeading(new Pose2d(-31, 35 * invert, Math.toRadians(180)), Math.toRadians(160))
+                .splineToSplineHeading(new Pose2d(6, (35 * invert), Math.toRadians(180)), Math.toRadians(160))
                 .build();
 
-        Trajectory goToWhitePixel = drive.trajectoryBuilder((goToPixel.end()))
-                .lineToLinearHeading(new Pose2d(-55, 35 * invert, Math.toRadians(180)))
-                .build();
-
-        Trajectory goBackBackBack = drive.trajectoryBuilder(goToWhitePixel.end())
-                .lineToLinearHeading(new Pose2d(-55, 34 * invert, Math.toRadians(180)))
-                .splineToConstantHeading(new Vector2d(40, -15), Math.toRadians(350))
-                .build();
-
-        Trajectory goToBack = drive.trajectoryBuilder(goBackBackBack.end())
-                .lineToLinearHeading(new Pose2d(50, -31.5 + addY, Math.toRadians(180)))
+        Trajectory goToBack = drive.trajectoryBuilder(goToPixel.end())
+                .lineToLinearHeading(new Pose2d(49, -42 + addY, Math.toRadians(180)))
                 .build();
 
         Trajectory goPark = drive.trajectoryBuilder(goToBack.end())
                 .forward(8)
-                .splineToConstantHeading(new Vector2d(54, 11 * invert), Math.toRadians(0))
+                .splineToConstantHeading(new Vector2d(54, 62 * invert), Math.toRadians(0))
                 .build();
 
         drive.followTrajectory(goToPixel);
         placePixelLine();
-        drive.followTrajectory(goToWhitePixel);
-        drive.followTrajectory(goBackBackBack);
         drive.followTrajectory(goToBack);
         placeBoard();
         drive.followTrajectory(goPark);
         drive.update();
-    }
-
-    public void cycle(SampleMecanumDrive drive, double invert, Trajectory startpos) {
-        // callable function for one cycle of grabbing pixel and dropping
-        Score(drive, invert, startpos.end());
-
-        getRuntime(); // while less than 20000, go for another cycle
-    }
-
-    public void Score(SampleMecanumDrive drive, double invert, Pose2d startpos) {
-        // go to pixel, grab, go back and score
-        // TODO: Traj
-        Trajectory goToPixel = drive.trajectoryBuilder(startpos)
-                .splineToSplineHeading(new Pose2d(-31, 35 * invert, Math.toRadians(180)), Math.toRadians(160))
-                .build();
     }
 
 }   // end class

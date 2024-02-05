@@ -27,7 +27,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.firstinspires.ftc.teamcode.MechCat.AutonomousPeriod;
+package org.firstinspires.ftc.teamcode.MechCat.AutonomousPeriod.NewOld;
 
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
@@ -46,6 +46,7 @@ import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
 import org.firstinspires.ftc.robotcore.external.tfod.Recognition;
 import org.firstinspires.ftc.teamcode.drive.DriveConstants;
 import org.firstinspires.ftc.teamcode.drive.SampleMecanumDrive;
+import org.firstinspires.ftc.teamcode.trajectorysequence.TrajectorySequence;
 import org.firstinspires.ftc.vision.VisionPortal;
 import org.firstinspires.ftc.vision.tfod.TfodProcessor;
 import org.firstinspires.ftc.teamcode.drive.PoseStorage;
@@ -57,6 +58,9 @@ import static org.firstinspires.ftc.teamcode.MechCat.AutonomousPeriod.AutoConsta
 import static org.firstinspires.ftc.teamcode.MechCat.AutonomousPeriod.AutoConstants.ClawServoBoard;
 import static org.firstinspires.ftc.teamcode.MechCat.AutonomousPeriod.AutoConstants.ClawServoGround;
 
+import android.service.autofill.Sanitizer;
+
+import java.util.ArrayList;
 import java.util.List;
 
 /*
@@ -78,14 +82,14 @@ import java.util.List;
 // 7 inches to center from front
 // 6.5 inches to center from sides
 
-@com.qualcomm.robotcore.eventloop.opmode.Autonomous(name = "AutonomousBL")
+//@com.qualcomm.robotcore.eventloop.opmode.Autonomous(name = "AutonomousBL")
 public class AutonomousBlueLeft extends LinearOpMode {
 
     private static final boolean USE_WEBCAM = true;  // true for webcam, false for phone camera
 
     // TFOD_MODEL_ASSET points to a model file stored in the project Asset location,
     // this is only used for Android Studio when using models in Assets.
-    private static final String TFOD_MODEL_ASSET = "OurCoolModel.tflite";
+    private static final String TFOD_MODEL_ASSET = "OurCoolModel2.tflite";
     // TFOD_MODEL_FILE points to a model file stored onboard the Robot Controller's storage,
     // this is used when uploading models directly to the RC using the model upload interface.
     //private static final String TFOD_MODEL_FILE = "/sdcard/FIRST/tflitemodels/myCustomModel.tflite";
@@ -116,6 +120,7 @@ public class AutonomousBlueLeft extends LinearOpMode {
     public static int vTarget = 0;
 
     private double spdLMT = 14;
+    private List<Trajectory> trajs = new ArrayList<>();
     @Override
     public void runOpMode() {
         // sample mecanum drive for the trajectory
@@ -164,116 +169,86 @@ public class AutonomousBlueLeft extends LinearOpMode {
         Pose2d startPos = new Pose2d(12, 60, Math.toRadians(270));
         drive.setPoseEstimate(startPos);
 
-        // TODO: check / remake values for the trajectories as you see fit
-        // forward to tape areas and check the tape lines
-        Trajectory check1 = drive.trajectoryBuilder(startPos)
-                .forward(12,
+        TrajectorySequence turnCheck = drive.trajectorySequenceBuilder(startPos)
+                .lineToLinearHeading(new Pose2d(13, 45, Math.toRadians(288)),
                         SampleMecanumDrive.getVelocityConstraint(spdLMT, DriveConstants.MAX_ANG_VEL, DriveConstants.TRACK_WIDTH),
                         SampleMecanumDrive.getAccelerationConstraint(DriveConstants.MAX_ACCEL)
                 )
                 .build();
 
-        Trajectory check2 = drive.trajectoryBuilder(check1.end())
+        // TODO: check / remake values for the trajectories as you see fit
+        // forward to tape areas and check the tape lines
+        Trajectory mid = drive.trajectoryBuilder(turnCheck.end())
+                .lineToLinearHeading(new Pose2d(12, 24, Math.toRadians(270)),
+                        SampleMecanumDrive.getVelocityConstraint(spdLMT, DriveConstants.MAX_ANG_VEL, DriveConstants.TRACK_WIDTH),
+                        SampleMecanumDrive.getAccelerationConstraint(DriveConstants.MAX_ACCEL)
+                )
+                .build();
+
+        Trajectory left = drive.trajectoryBuilder(turnCheck.end())
                 .lineToLinearHeading(new Pose2d(23, 34, Math.toRadians(180)),
                         SampleMecanumDrive.getVelocityConstraint(spdLMT, DriveConstants.MAX_ANG_VEL, DriveConstants.TRACK_WIDTH),
                         SampleMecanumDrive.getAccelerationConstraint(DriveConstants.MAX_ACCEL)
                 )
                 .build();
 
-        Trajectory toLeftBack = drive.trajectoryBuilder(check2.end())
-                .lineToLinearHeading(new Pose2d(50, 28, Math.toRadians(180)),
+        Trajectory right = drive.trajectoryBuilder(turnCheck.end())
+                .splineToSplineHeading(new Pose2d(0,35, Math.toRadians(180)), Math.toRadians(180),
                         SampleMecanumDrive.getVelocityConstraint(spdLMT, DriveConstants.MAX_ANG_VEL, DriveConstants.TRACK_WIDTH),
                         SampleMecanumDrive.getAccelerationConstraint(DriveConstants.MAX_ACCEL)
                 )
                 .build();
 
-        Trajectory toMidBack = drive.trajectoryBuilder(check2.end())
-                .lineToLinearHeading(new Pose2d(49, 33, Math.toRadians(180)),
-                        SampleMecanumDrive.getVelocityConstraint(spdLMT, DriveConstants.MAX_ANG_VEL, DriveConstants.TRACK_WIDTH),
-                        SampleMecanumDrive.getAccelerationConstraint(DriveConstants.MAX_ACCEL)
-                )
-                .build();
-
-        Trajectory toRightBack = drive.trajectoryBuilder(check2.end())
-                .lineToLinearHeading(new Pose2d(49, 38.5, Math.toRadians(180)),
-                        SampleMecanumDrive.getVelocityConstraint(spdLMT, DriveConstants.MAX_ANG_VEL, DriveConstants.TRACK_WIDTH),
-                        SampleMecanumDrive.getAccelerationConstraint(DriveConstants.MAX_ACCEL)
-                )
-                .build();
-
-        Trajectory toPark = drive.trajectoryBuilder(toMidBack.end())
-                .forward(8,
-                        SampleMecanumDrive.getVelocityConstraint(spdLMT, DriveConstants.MAX_ANG_VEL, DriveConstants.TRACK_WIDTH),
-                        SampleMecanumDrive.getAccelerationConstraint(DriveConstants.MAX_ACCEL)
-                )
-                .splineToConstantHeading(new Vector2d(54, 62), Math.toRadians(0),
-                        SampleMecanumDrive.getVelocityConstraint(spdLMT, DriveConstants.MAX_ANG_VEL, DriveConstants.TRACK_WIDTH),
-                        SampleMecanumDrive.getAccelerationConstraint(DriveConstants.MAX_ACCEL)
-                )
-                .build();
-
-        Trajectory gentlePlace = drive.trajectoryBuilder(check2.end())
-                .back(11)
-                .build();
+        drive.followTrajectorySequence(turnCheck);
+        sleep(1500);
 
         // scan for pixel or prop somehow with tensorflow
         boolean ispropDetected = false;
         // TODO: Add tensorflow stuff here
-        if (!ispropDetected) {
-            drive.followTrajectory(check1);
-            // tensorflow here
-            sleep(1000);
-            List<Recognition> currentRecognitions = tfod.getRecognitions();
-            if (currentRecognitions.size() > 0) {
-                ispropDetected = true;
-                mBoard = true;
-                telemetryTfod();
-                telemetry.update();
-                // if prop found ispropDetected = true and place pixel
-                weGoRam(drive, check1);
-                placePixelLine();
-                sleep(1500);
-            }
-            drive.update();
-        }
-        if (!ispropDetected) {
-            drive.followTrajectory(check2);
-            // tensorflow here
-            sleep(1000);
-            List<Recognition> currentRecognitions = tfod.getRecognitions();
-            if (currentRecognitions.size() > 0) {
-                ispropDetected = true;
-                lBoard = true;
-                telemetryTfod();
-                telemetry.update();
-                weGoRam(drive, check2);
-                placePixelLine();
-                sleep(1500);
-            }
-            drive.update();
-        }
 
-        if (!ispropDetected) {
-            // tensorflow here
-            rBoard = true;
-            drive.followTrajectory(gentlePlace);
-            sleep(500);
-            placePixelLine();
-            sleep(1500);
-            drive.update();
+        double biggestArea = 0;
+        String side = "R";
+        List<Recognition> currentRecognitions = tfod.getRecognitions();
+        for (Recognition recognition : currentRecognitions) {
+            float x = (recognition.getLeft() + recognition.getRight()) / 2;
+            float y = (recognition.getTop() + recognition.getBottom()) / 2;
+            double width = recognition.getWidth();
+            double height = recognition.getHeight();
+            String label = recognition.getLabel();
+
+            if (Math.abs(width * height) > biggestArea) {
+                if (label.charAt(0) == 'B') {
+                    ispropDetected = true;
+                    biggestArea = Math.abs(width * height);
+                    if (x < 320)
+                        side = "L";
+                    else if (320 <= x)
+                        side = "M";
+                }
+            }
         }
 
         // Drive bot to back board
         //drive.followTrajectory(toBack);
 
-        if (lBoard) {
-            drive.followTrajectory(toLeftBack);
-        } else if (mBoard) {
-            drive.followTrajectory(toMidBack);
-        } else if (rBoard) {
-            drive.followTrajectory(toRightBack);
-        } else {
-            drive.followTrajectory(toMidBack);
+        if (side.matches("L")) {
+            drive.followTrajectory(left);
+            trajs.add(left);
+            back(drive, trajs.get(trajs.size() - 1));
+            placePixelLine();
+            goToLeftBack(drive, trajs.get(trajs.size() - 1));
+        } else if (side.matches("M")) {
+            drive.followTrajectory(mid);
+            trajs.add(mid);
+            back(drive, trajs.get(trajs.size() - 1));
+            placePixelLine();
+            goToMidBack(drive, trajs.get(trajs.size() - 1));
+        } else if (side.matches("R")) {
+            drive.followTrajectory(right);
+            trajs.add(right);
+            back(drive, trajs.get(trajs.size() - 1));
+            placePixelLine();
+            goToRightBack(drive, trajs.get(trajs.size() - 1));
         }
         drive.update();
 
@@ -288,10 +263,61 @@ public class AutonomousBlueLeft extends LinearOpMode {
             placePixelBoard(20);
         }
         // Park bot
-        drive.followTrajectory(toPark);
+        goPark(drive, trajs.get(trajs.size() - 1));
         drive.update();
         // update pose
         PoseStorage.currentPose = drive.getPoseEstimate();
+    }
+    private void goPark(SampleMecanumDrive drive, Trajectory traj) {
+        Trajectory goPark = drive.trajectoryBuilder(traj.end())
+                .forward(8,
+                        SampleMecanumDrive.getVelocityConstraint(spdLMT, DriveConstants.MAX_ANG_VEL, DriveConstants.TRACK_WIDTH),
+                        SampleMecanumDrive.getAccelerationConstraint(DriveConstants.MAX_ACCEL)
+                )
+                .splineToConstantHeading(new Vector2d(54, 62), Math.toRadians(0),
+                        SampleMecanumDrive.getVelocityConstraint(spdLMT, DriveConstants.MAX_ANG_VEL, DriveConstants.TRACK_WIDTH),
+                        SampleMecanumDrive.getAccelerationConstraint(DriveConstants.MAX_ACCEL)
+                )
+                .build();
+
+        drive.followTrajectory(goPark);
+    }
+    private void goToRightBack(SampleMecanumDrive drive, Trajectory traj){
+        Trajectory toRightBack = drive.trajectoryBuilder(traj.end())
+                .lineToLinearHeading(new Pose2d(49, 28, Math.toRadians(180)),
+                        SampleMecanumDrive.getVelocityConstraint(spdLMT, DriveConstants.MAX_ANG_VEL, DriveConstants.TRACK_WIDTH),
+                        SampleMecanumDrive.getAccelerationConstraint(DriveConstants.MAX_ACCEL)
+                )
+                .build();
+        trajs.add(toRightBack);
+        drive.followTrajectory(toRightBack);
+    }
+    private void goToLeftBack(SampleMecanumDrive drive, Trajectory traj){
+        Trajectory toLeftBack = drive.trajectoryBuilder(traj.end())
+                .lineToLinearHeading(new Pose2d(50, 38.5, Math.toRadians(180)),
+                        SampleMecanumDrive.getVelocityConstraint(spdLMT, DriveConstants.MAX_ANG_VEL, DriveConstants.TRACK_WIDTH),
+                        SampleMecanumDrive.getAccelerationConstraint(DriveConstants.MAX_ACCEL)
+                )
+                .build();
+        trajs.add(toLeftBack);
+        drive.followTrajectory(toLeftBack);
+    }
+    private void goToMidBack(SampleMecanumDrive drive, Trajectory traj) {
+        Trajectory toMidBack = drive.trajectoryBuilder(traj.end())
+                .lineToLinearHeading(new Pose2d(49, 33, Math.toRadians(180)),
+                        SampleMecanumDrive.getVelocityConstraint(spdLMT, DriveConstants.MAX_ANG_VEL, DriveConstants.TRACK_WIDTH),
+                        SampleMecanumDrive.getAccelerationConstraint(DriveConstants.MAX_ACCEL)
+                )
+                .build();
+        trajs.add(toMidBack);
+        drive.followTrajectory(toMidBack);
+    }
+    private void back(SampleMecanumDrive drive, Trajectory traj) {
+        Trajectory back = drive.trajectoryBuilder(traj.end())
+                .back(11)
+                .build();
+        trajs.add(back);
+        drive.followTrajectory(back);
     }
 
     private void weGoRam(SampleMecanumDrive drive, Trajectory traj){
@@ -332,7 +358,7 @@ public class AutonomousBlueLeft extends LinearOpMode {
 
         if (Math.abs(vPosition - target) <= 10) {
             vTarget = target;
-            double pos = (435 - ((vTarget - 100) / (11/3f))) / 300;
+            double pos = (425 - ((vTarget - 100) / (11/3f))) / 300;
             if (pos > 1)
                 pos = 1f;
             clawServo.setPosition(pos);
@@ -429,7 +455,7 @@ public class AutonomousBlueLeft extends LinearOpMode {
         visionPortal = builder.build();
 
         // Set confidence threshold for TFOD recognitions, at any time.
-        tfod.setMinResultConfidence(0.85f);
+        tfod.setMinResultConfidence(0.60f);
 
         // Disable or re-enable the TFOD processor at any time.
         visionPortal.setProcessorEnabled(tfod, true);
